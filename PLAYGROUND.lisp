@@ -34,12 +34,20 @@
 ;;; 4.29 (GISP)
 (defun logical-and-1 (x y) 
   (cond (x (cond (y t)))))
+(defun find-ordered-index (elements predicate index &optional (key index))
+  (cond 
+    ((or (= index 0) (= key 0)) 0)
+    ((funcall predicate (nth (- key 1) elements) (nth index elements)) (find-ordered-index elements predicate index (- key 1))) 
+    (t key)))
 
-;;; Slicing lists
+;;;; Slicing lists and Insertion Sort
+
+;;; Remember that every time insertion sort is called, a recursive function will run multiple times, ruining performance, hence, slice is now iterative
+;;; This slice function exists in CL as the subseq function
 (defun slice (elements from-index to-index) 
-  (cond
-    ((= from-index to-index) nil)
-    (t (cons (nth from-index elements) (slice elements (+ from-index 1) to-index)))))
+  (loop
+    for i from from-index to (- to-index 1)
+    collect (nth i elements)))
 
 (defun slice-2 (elements from-index to-index &optional (accumulator '()))
   (cond 
@@ -49,11 +57,23 @@
 (defun splice (elements from-index to-index)
   (append (slice elements 0 from-index) (slice elements to-index (length elements))))
 
+;;; Check hyperspec for copy-list and rotatef to replace this function
 (defun move (elements from-index to-index) 
   (let ((spliced (splice elements from-index (+ from-index 1))))
     (append (slice spliced 0 to-index) (list (nth from-index elements)) (slice spliced to-index (length spliced)))))
 
-(defun insertion-sort (elements &optional (index 1))
+;;; Can be implented with CL core
+(defun find-ordered-index (elements predicate index &optional (key index))
+  (cond 
+    ((or (= index 0) (= key 0)) 0)
+    ((funcall predicate (nth (- key 1) elements) (nth index elements)) (find-ordered-index elements predicate index (- key 1))) 
+    (t key)))
+
+(defun insertion-sort (elements predicate &optional (index 0))
   (cond
-    ((= index (length elements))) elements)
-    (t )))
+    ((= index (length elements)) elements)
+    (t (insertion-sort (move elements index (find-ordered-index elements predicate index)) predicate (+ index 1)))))
+
+(defun generate-random-list ()
+  (loop
+    for i from 1 to 1000 collect (random 100)))
